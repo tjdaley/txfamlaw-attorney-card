@@ -94,6 +94,7 @@ Field | Purpose | Sample | Required? | Default
   "year": 2009,
   "pinned": false
 }
+```
 
 ---
 
