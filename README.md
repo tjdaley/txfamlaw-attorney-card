@@ -95,7 +95,79 @@ Field | Purpose | Sample | Required? | Default
   "pinned": false
 }
 
+---
 
+### Credentials
+
+*Credentials* have these properties:
+
+Field | Purpose | Sample | Required? | Default
+--- | --- | --- | --- | ---
+**name** | The name of the credential earned | Board Certified in Family Law | **YES** | NONE
+**issuer** | The name of the issuing institution | Texas Board of Legal Specialization | **YES** | NONE
+**category** | Subsection of the credentials display and used for SEO | Board Certification | NO | NONE
+**since** | The year the credential was earned | 2014 | NO | NONE
+**pinned** | Whether the credential is forced to appear and at the top of the list | True | NO | False
+
+#### Sample JSON
+
+```json
+{
+  "name": "Board Certified in Family Law",
+  "issuer": "Texas Board of Legal Specialization",
+  "since": "2014",
+  "category": "Board Certification"
+}
+```
+
+---
+
+### Publications
+
+*Publications* have these properties:
+
+Field | Purpose | Sample | Required? | Default
+--- | --- | --- | --- | ---
+**title** | The name of the credential earned | Board Certified in Family Law | **YES** | NONE
+**venue** | The name of the issuing institution | Texas Board of Legal Specialization | **YES** | NONE
+**date** | The year the credential was earned | 2014 | NO | NONE
+**url** | Link to the paper, presentation, or video | https://... | No | NONE
+**pinned** | Whether the publication is forced to appear and at the top of the list | True | NO | False
+
+#### Sample JSON
+
+```json
+{
+  "title": "AI Evidence in Texas Litigation",
+  "venue": "Texas Bar Journal",
+  "date": "2025-07-01",
+  "url": "https://texasbarjournal.com/articles/2025/07/id=12345",
+  "pinned": True
+}
+```
+
+---
+
+### Awards
+
+*Awards* have these properties:
+
+Field | Purpose | Sample | Required? | Default
+--- | --- | --- | --- | ---
+**name** | The name of the award | Legal Advocate of the Year | **YES** | NONE
+**issuer** | The name of the organization giving the award | Legal Aid of NorthWest Texas | **YES** | NONE
+**year** | The year the award was given | 2025 | NO | NONE
+**pinned** | Whether the award is forced to appear and at the top of the list | True | NO | False
+
+#### Sample JSON
+
+```json
+{
+  "name": "Legal Advocate of the Year",
+  "issuer": "Legal Aid of NorthWest Texas",
+  "year": 2025,
+  "pinned": True
+}
 ```
 
 ---
