@@ -1,12 +1,12 @@
 # TXFamLaw Attorney Cards & Directory
 
 A WordPress plugin that renders attorney contact cards, a searchable attorney
-directory, structured profile lists (credentials, education, awards, etc.), and
-`ProfilePage`/`Person` schema — all driven by the txfamlaw attorney API. Data is
-fetched server-side and cached, so pages stay fast and the API isn't hit on every
-view.
+directory, structured profile lists (credentials, education, awards, etc.),
+`ProfilePage`/`Person` schema, and a lead-capture contact form — all driven by
+the txfamlaw attorney API. Data is fetched server-side and cached, so pages stay
+fast and the API isn't hit on every view.
 
-**Current version:** 2.6.0
+**Current version:** 2.9.1
 
 ---
 
@@ -22,6 +22,9 @@ view.
   `jobTitle`, `address`, `sameAs`, `worksFor`, `knowsAbout`, `hasCredential`,
   `alumniOf`, `memberOf`, `award`) from the same API data, and suppresses Rank
   Math's competing schema on attorney pages.
+- **Contact form** — a "Schedule a Consultation" lead form that submits
+  server-side (proxied through WordPress) to the FastAPI leads endpoint, with
+  attorney attribution, spam defense, and visitor context for geolocation.
 
 All output pulls brand colors from the Kadence global palette, with hex fallbacks.
 
@@ -60,15 +63,92 @@ Lists every attorney whose `include_in_directory` is true, sorted by `order_by`.
 
 An empty or absent list renders nothing — no empty heading.
 
+**Ordering.** Within each list, items are ordered **pinned first, then most
+recent, then undated last**. An item with `"pinned": true` always appears (it
+survives the `limit`) and sorts to the top. Among unpinned items, the most
+recent year wins; items with no parseable year sort last. This means an attorney
+can force a favorite award (or an important but undated item) to always show by
+pinning it. The date field used for sorting is per type: `year` for awards,
+`date` for publications, `since` for organizations and credentials. Pinning
+affects the **visible list only**; the schema always emits every item.
+
 #### Sequence of Lists
 
 My opinion is that lists should be shown in this order:
 
-- Degrees (no limnit)
+- Degrees (no limit)
 - Credentials (no limit)
 - Publications (limit 10)
 - Awards (limit 10)
 - Organizations (limit 10)
+
+---
+
+## Contact form
+
+```
+[attorney_contact_form]
+[attorney_contact_form slug="nag"]
+[attorney_contact_form show_picker="no" heading="Talk to Us" subhead="..."]
+```
+
+Renders a "Schedule a Consultation" lead form. The browser submits same-origin
+to WordPress, which validates and **proxies** the lead server-side to the
+FastAPI endpoint — the endpoint and API key are never exposed to the browser.
+
+- `slug` — optional. Pins the lead to a specific attorney (use on bio pages).
+- `show_picker` — `yes` forces the "Who would you like to reach?" dropdown;
+  `no` suppresses it; omitted = auto (shown only when no `slug` is set).
+- `heading` / `subhead` — optional copy overrides. If omitted and a `slug` is
+  set, the subhead names that attorney.
+
+### Attorney attribution (who gets the lead)
+
+Resolved server-side, most specific wins:
+
+1. The visitor's explicit dropdown choice
+2. The form's `slug` attribute (bio-page embed)
+3. The subdomain (e.g. `nag.txfamlaw.com` → `nag`; `www`/`staging` are ignored)
+4. The post author's `user_nicename` (for content pages — mapped to an attorney
+   on the FastAPI side)
+5. `www` (the synthetic/default attorney)
+
+The resolved value is sent as `attorney_slug`.
+
+### What the form sends
+
+Matches the FastAPI `Lead` model: `attorney_slug`, `url_path`, `full_name`,
+`email`, `telephone`, `audit_score`, `needs_follow_up`, `ip_address`,
+`user_agent`, `referrer`, `request_headers` (a curated subset — accept-language,
+user-agent, referer, client hints; **no cookies**), `conflict_summary`, and
+`lead_source` (`"wordpress"`). `session_uuid` is omitted.
+
+**Geolocation:** `country` / `state` / `city` / `zip` are **not** sent — the
+FastAPI server fills these from the `ip_address` field in the payload. Because
+the lead is proxied, FastAPI must geolocate from `lead.ip_address` (the
+forwarded visitor IP), **not** from the request's connection IP (which is now
+the WordPress/ALB server). The plugin reads the real visitor IP from
+`X-Forwarded-For` (left-most entry), falling back to `REMOTE_ADDR`.
+
+### Spam defense
+
+- A hidden honeypot field (`website`) — if filled, the submission is silently
+  dropped and nothing is forwarded.
+- A WordPress nonce (CSRF protection).
+- A per-IP rate limit (5 submissions per 10 minutes), keyed off the real
+  visitor IP.
+
+### Required configuration (`wp-config.php`)
+
+```php
+// API key sent to the leads endpoint (kept server-side, never in the browser).
+define( 'TXFL_LEADS_API_KEY', 'your-secret-key-here' );
+
+// Optional: override the leads endpoint (defaults to the constant below).
+define( 'TXFL_LEADS_ENDPOINT', 'https://txfamlaw.com/api/leads' );
+```
+
+If `TXFL_LEADS_API_KEY` is defined, it is sent in the payload as `api_key`.
 
 ---
 
@@ -129,9 +209,9 @@ Field | Purpose | Sample | Required? | Default
 
 Field | Purpose | Sample | Required? | Default
 --- | --- | --- | --- | ---
-**title** | The name of the credential earned | Board Certified in Family Law | **YES** | NONE
-**venue** | The name of the issuing institution | Texas Board of Legal Specialization | **YES** | NONE
-**date** | The year the credential was earned | 2014 | NO | NONE
+**title** | The title of the publication or presentation | AI Evidence in Texas Litigation | **YES** | NONE
+**venue** | Where it was published or presented | Texas Bar Journal | **YES** | NONE
+**date** | When it was published or presented | 2025-07-01 | NO | NONE
 **url** | Link to the paper, presentation, or video | https://... | No | NONE
 **pinned** | Whether the publication is forced to appear and at the top of the list | True | NO | False
 
@@ -215,7 +295,9 @@ before publishing.
   refresh button.
 - `attorney-schema.php` — ProfilePage/Person schema emitter and Rank Math
   suppression.
-- `attorney-card.css` — styling for cards, directory, and lists.
+- `attorney-contact-form.php` — "Schedule a Consultation" form and the
+  server-side proxy to the FastAPI leads endpoint.
+- `attorney-card.css` — styling for cards, directory, lists, and the form.
 - `attorney-directory.js` — client-side directory search.
 - `DEPLOYMENT.md` — deployment notes for the Docker/multi-server workflow.
 
