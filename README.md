@@ -49,7 +49,7 @@ Lists every attorney whose `include_in_directory` is true, sorted by `order_by`.
 ```
 [attorney_list slug="tjd" type="credentials"]
 [attorney_list slug="tjd" type="awards" limit="8"]
-[attorney_list slug="tjd" type="education" heading="Education"]
+[attorney_list slug="tjd" type="degrees" heading="Education"]
 ```
 - `slug` (required) — the attorney's API slug.
 - `type` (required) — one of: `credentials`, `degrees`, `organizations`,
@@ -59,6 +59,44 @@ Lists every attorney whose `include_in_directory` is true, sorted by `order_by`.
   is shown). Schema always includes the full list regardless of `limit`.
 
 An empty or absent list renders nothing — no empty heading.
+
+#### Sequence of Lists
+
+My opinion is that lists should be shown in this order:
+
+- Degrees (no limnit)
+- Credentials (no limit)
+- Publications (limit 10)
+- Awards (limit 10)
+- Organizations (limit 10)
+
+---
+
+## Data Shapes
+
+### Degrees
+
+*Degrees* have these properties:
+
+Field | Purpose | Sample | Required? | Default
+--- | --- | --- | --- | ---
+**degree** | The name of the degree conferred | J.D. | **YES** | NONE
+**school** | The name of the conferring institution | Texas A&M School of Law | **YES** | NONE
+**year** | The year the degree was conferred | 2009 | NO | NONE
+**pinned** | Whether the degree is forced to appear and at the top of the list | True | NO | False
+
+#### Sample JSON
+
+```json
+{
+  "degree": "J.D.",
+  "school": "Texas A&M University School of Law",
+  "year": 2009,
+  "pinned": false
+}
+
+
+```
 
 ---
 
